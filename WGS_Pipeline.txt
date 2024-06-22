@@ -1,0 +1,88 @@
+Decoding-SRR29492069-Comprehensive-Gene-Annotation-via-WGS
+
+INTRODUCTION:
+	Whole Genome Sequencing (WGS) is slowly but surely becoming an integral part of the landscape of clinical diagnostic testing for rare genetic disorders. WGS provides more comprehensive picture of the genome considering both non-coding and coding genomic regions. With the continuing decrease in cost of whole genome sequencing (WGS), the era of
+WGS testing has become economically feasible, facilitating broader access to the benefits that are helping to define WGS as the new diagnostic standard. Moreover, WGS allows obtaining more uniform and reliable coverage. All in all, WGS is a more universal method than WES.
+
+STEP 1: To retrieve the data scroll to the run table and access the data “SRR29492069”, From data access tab retrieve the data through NCBI link or AWS link.
+
+Retrieve SRA sequence from public database through command line using following command:
+	wget https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR29492069/SRR29492069
+	
+STEP 2: CONVERSION OF SRA TO FASTQ FILE.
+
+Download SRA toolkit and extract through command line using the givencommands:
+	wget https://ftp.ncbi.nlm.nih.gov/sra/sdk/2.10.0/sratoolkit.2.10.0- ubuntu64.tar.gz
+
+Extract the toolkit:
+	tar -xzvf sratoolkit.2.10.0-ubuntu64.tar.gz
+	
+Convert SRA file to FastQ format file
+	fastq-dump --split-files /home/taral/NGS/SRR29492069
+	
+STEP 3: PERFORM QUALITY CHECK USING FASTQ
+
+Download FastQC software and extract it in working directory. Install FastQC using the following command:
+	sudo apt install fastqc
+	
+Check quality of fastq file/s
+	fastqc SRR29492069_1.fastq SRR29492069_2.fastq
+	
+QC Report will be generated in HTML format.
+
+STEP 4: GENERATE HIGH QUALITY DATA AFTER FILTERATION
+
+Download latest version of Trimmomatic trimming tool with binary format and extract it in working directory. Trim poor-quality reads of FastQ file/s using bellowed command.
+	java -jar /home/taral/NGS/Trimmo/Trimmomatic-0.39 PE -	phred33 SRR29492069_1.fastq SRR29492069_2.fastq outrim1.fastq outtrim2.fastq LEADING:3 TRAILING:3 														SLIDINGWINDOW:4:15 MINLEN:36
+
+Perform Quality check of Trimmomatic outputs using FastQC.
+	fastqc outtrim1.fastq outtrim2.fastq
+
+Again, perform Trimmomatic operation if any poor-quality reads are left.
+
+STEP 5:DENOVO ASSEMBLY
+
+Download velvet assembler source code and extract it in working directory. Install by using the given command:
+	sudo apt install velvet
+	
+Assemble the sequences using the given command
+	velveth velvet_output 31 -fastq -shortPaired /home/taral/NGS/SRR29492069_1.fastq /home/taral/NGS/SRR29492069_2.fastq
+	
+	velvetg /home/taral/NGS/De_novo_assembly/velvet_output -clean yes -exp_cov 21 -cov_cutoff 2.81 -min_contig_lgth 200
+
+output file contigs.fasta will be generated.
+
+STEP 6: GENE PREDICTION USING BLASTX
+
+Perform Stand-alone BlastX for functional annotation of resulted contigs.fasta (nucleotide) file against (Protein) database.
+Download Reference data set from UNIPROT database.
+Select proteome and search E. coli. Select the entry “UP000000625” and download the fasta file. This file (UP000000625_83333.fasta) is to be used as your protein subject database.
+Nucleotide (contigs.fasta) file is required to perform BlastX.
+Use Velvet output file (contigs.fasta) as your nucleotide query file.
+
+Download and Run Blast
+
+To download Blast executable file use the following link
+
+	https://ftp.ncbi.nlm.nih.gov/blast/executables/LATEST/
+Download ―ncbi-blast-2.13.0+-x64-linux.tar.gz file.
+
+To build database from your subject file UP000000625_83333.fasta run the given command:
+	/home/taral/NGS/Blastx/ncbi-blast-2.15.0+-x64-linux/ncbi-blast-2.15.0+/bin/makeblastdb -in UP000000625_83333.fasta -dbtype prot
+	
+Run Blast for your subject database and query data:
+	/home/taral/NGS/Blastx/ncbi-blast-2.15.0+-x64-linux/ncbi-blast-2.15.0+/bin/blastx -query contigs.fa -db UP000000625_83333.fasta -out blastx_results.txt -evalue 1e-04 -outfmt 6 -max_target_seqs 5
+
+STEP 7: PERFORM ANNOTATION USING PANTHER DATABASE:
+
+Prepare a gene list of top 10 entries by UNIPROT search and retrieving the gene names from UNIPROT. Use the prepared gene list as your panther database input.
+• Upload the prepared gene list in the panther database “Enter IDs” text box or upload the text file by using “browse file” option.
+• Select ID List from the “Select List Type”
+• Select specific organism (E. coli) against which you have to annotate your gene list.
+• Select the type of analysis you have to perform (“Functional analysis viewed in graphic charts”).
+• Then submit your input and view graphical results.
+
+
+
+
+
